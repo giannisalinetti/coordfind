@@ -29,6 +29,36 @@ func getResp(url string) []byte {
 	return []byte(jsonString)
 }
 
+// processPosition returns latitude and longitude as float64
+// from a query result
+func processPosition(m map[string]interface{}) (float64, float64, bool) {
+	l0, ok := m["results"].([]interface{})
+	if !ok {
+		return 0, 0, false
+	}
+	l1, ok := l0[0].(map[string]interface{})
+	if !ok {
+		return 0, 0, false
+	}
+	l2, ok := l1["geometry"].(map[string]interface{})
+	if !ok {
+		return 0, 0, false
+	}
+	l3, ok := l2["location"].(map[string]interface{})
+	if !ok {
+		return 0, 0, false
+	}
+	latitude, ok := l3["lat"].(float64)
+	if !ok {
+		return 0, 0, false
+	}
+	longitude, ok := l3["lng"].(float64)
+	if !ok {
+		return 0, 0, false
+	}
+	return latitude, longitude, true
+}
+
 func main() {
 
 	appName := filepath.Base(os.Args[0])
@@ -77,11 +107,12 @@ func main() {
 	// unpack the map using type assertion.
 	// We want to print out the coordinates in the
 	// followint format: (lat, lng).
-	l0 := m["results"].([]interface{})
-	l1 := l0[0].(map[string]interface{})
-	l2 := l1["geometry"].(map[string]interface{})
-	l3 := l2["location"].(map[string]interface{})
+	lat, lng, ok := processPosition(m)
+	if !ok {
+		fmt.Println("Error extracting latitude/longitude")
+		os.Exit(1)
+	}
 
 	// Print results
-	fmt.Printf("(%f, %f)\n", l3["lat"], l3["lng"])
+	fmt.Printf("(%f, %f)\n", lat, lng)
 }
